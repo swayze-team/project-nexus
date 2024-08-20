@@ -1,0 +1,227 @@
+<html><head><base href="https://projectnexus.example.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Nexus - Launchers</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: #0f0f23;
+    color: #00ff00;
+    line-height: 1.6;
+    padding: 20px;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  h1, h2 {
+    color: #00ff00;
+  }
+  pre {
+    background-color: #1a1a2e;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    color: #00ff00;
+  }
+  .btn {
+    display: inline-block;
+    background-color: #00ff00;
+    color: #0f0f23;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 20px;
+  }
+  .btn:hover {
+    background-color: #00cc00;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Project Nexus - Launchers</h1>
+  
+  <p>Voici les codes sources séparés pour le Project Nexus Launcher et le Server Starter. Chaque fichier est autonome et ne nécessite pas de fichiers supplémentaires pour fonctionner.</p>
+
+  <h2>1. Project Nexus Launcher</h2>
+  <pre>
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;filesystem&gt;
+#include &lt;fstream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;Windows.h&gt;
+
+namespace fs = std::filesystem;
+
+void printProjectNexus() {
+    std::cout << R"(
+  _____           _           _     _   _                     
+ |  __ \         (_)         | |   | \ | |                    
+ | |__) | __ ___  _  ___  ___| |_  |  \| | _____  ___   _ ___ 
+ |  ___/ '__/ _ \| |/ _ \/ __| __| | . ` |/ _ \ \/ / | | / __|
+ | |   | | | (_) | |  __/ (__| |_  | |\  |  __/>  <| |_| \__ \
+ |_|   |_|  \___/| |\___|\___|\__| |_| \_|\___/_/\_\\__,_|___/
+                _/ |                                          
+               |__/                                           
+    )" << std::endl;
+}
+
+bool isValidFortnitePath(const std::string& path) {
+    fs::path fortnitePath = fs::path(path) / "FortniteGame" / "Binaries" / "Win64" / "FortniteClient-Win64-Shipping.exe";
+    return fs::exists(fortnitePath);
+}
+
+void modifyServerParameters(const std::string& path) {
+    fs::path configPath = fs::path(path) / "FortniteGame" / "Config" / "DefaultEngine.ini";
+    std::ofstream config(configPath, std::ios::app);
+    if (config.is_open()) {
+        config << "\n[/Script/OnlineSubsystemUtils.IpNetDriver]\nNetServerMaxTickRate=30\n";
+        config.close();
+        std::cout << "Modification des paramètres serveur terminée !" << std::endl;
+    } else {
+        std::cout << "Erreur lors de la modification des paramètres serveur." << std::endl;
+    }
+}
+
+int main() {
+    printProjectNexus();
+    std::cout << "Initialisation du Launcher" << std::endl;
+
+    std::string fortnitePath;
+    do {
+        std::cout << "Veuillez entrer le chemin de Fortnite S10 : ";
+        std::getline(std::cin, fortnitePath);
+    } while (!isValidFortnitePath(fortnitePath));
+
+    std::cout << "Modification des paramètres serveur de Fortnite S10" << std::endl;
+    modifyServerParameters(fortnitePath);
+
+    std::string pseudo;
+    std::cout << "Veuillez indiquer votre pseudo : ";
+    std::getline(std::cin, pseudo);
+
+    std::cout << "Merci " << pseudo << " !" << std::endl;
+    std::cout << "Exécution de Project Nexus S10" << std::endl;
+
+    std::string command = "\"" + fortnitePath + "\\FortniteGame\\Binaries\\Win64\\FortniteClient-Win64-Shipping.exe\" -AUTH_LOGIN=" + pseudo + "@projectnexus.com -AUTH_PASSWORD=projectnexus -AUTH_TYPE=epic";
+    system(command.c_str());
+
+    std::cout << "Profitez bien ! Si vous rencontrez des bugs, n'hésitez pas à les signaler sur notre serveur Discord officiel !" << std::endl;
+
+    return 0;
+}
+  </pre>
+
+  <h2>2. Project Nexus Server Starter</h2>
+  <pre>
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;filesystem&gt;
+#include &lt;fstream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;Windows.h&gt;
+#include &lt;wininet.h&gt;
+
+#pragma comment(lib, "wininet.lib")
+
+namespace fs = std::filesystem;
+
+void downloadFile(const std::string& url, const std::string& outputPath) {
+    HINTERNET hInternet = InternetOpen("ProjectNexusDownloader", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (hInternet == NULL) {
+        std::cerr << "Erreur lors de l'initialisation de WinINet" << std::endl;
+        return;
+    }
+
+    HINTERNET hUrl = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
+    if (hUrl == NULL) {
+        std::cerr << "Erreur lors de l'ouverture de l'URL" << std::endl;
+        InternetCloseHandle(hInternet);
+        return;
+    }
+
+    std::ofstream outputFile(outputPath, std::ios::binary);
+    if (!outputFile) {
+        std::cerr << "Erreur lors de la création du fichier de sortie" << std::endl;
+        InternetCloseHandle(hUrl);
+        InternetCloseHandle(hInternet);
+        return;
+    }
+
+    char buffer[1024];
+    DWORD bytesRead;
+    while (InternetReadFile(hUrl, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0) {
+        outputFile.write(buffer, bytesRead);
+    }
+
+    outputFile.close();
+    InternetCloseHandle(hUrl);
+    InternetCloseHandle(hInternet);
+}
+
+void extractZip(const std::string& zipPath, const std::string& extractPath) {
+    std::string command = "powershell -command \"Expand-Archive -Path '" + zipPath + "' -DestinationPath '" + extractPath + "' -Force\"";
+    system(command.c_str());
+}
+
+int main() {
+    std::cout << "Project Nexus Server Starter" << std::endl;
+
+    std::string password;
+    std::cout << "Entrez le mot de passe : ";
+    std::getline(std::cin, password);
+
+    if (password != "ProjectNexusBeta") {
+        std::cout << "Mot de passe incorrect. Fermeture du programme." << std::endl;
+        return 1;
+    }
+
+    fs::create_directory("LawinServer");
+
+    std::cout << "Téléchargement de LawinServer..." << std::endl;
+    downloadFile("https://github.com/Lawin0129/LawinServer/archive/refs/heads/main.zip", "LawinServer.zip");
+
+    std::cout << "Extraction de LawinServer..." << std::endl;
+    extractZip("LawinServer.zip", "LawinServer");
+
+    std::cout << "Installation des packages..." << std::endl;
+    system("cd LawinServer\\LawinServer-main && install-packages.bat");
+
+    std::cout << "Démarrage du serveur..." << std::endl;
+    system("cd LawinServer\\LawinServer-main && start.bat");
+
+    std::cout << "Le serveur LawinServer est maintenant en cours d'exécution." << std::endl;
+    std::cout << "Adresse du serveur : http://localhost:3551" << std::endl;
+    std::cout << "Vous pouvez maintenant lancer Fortnite pour vous connecter au serveur." << std::endl;
+
+    return 0;
+}
+  </pre>
+
+  <h2>Instructions de compilation</h2>
+  <p>Pour compiler ces launchers, suivez ces étapes :</p>
+  <ol>
+    <li>Assurez-vous d'avoir un compilateur C++ installé (comme MinGW-w64 ou Visual Studio).</li>
+    <li>Ouvrez une invite de commande ou un terminal dans le dossier contenant les fichiers sources.</li>
+    <li>Pour le Project Nexus Launcher, utilisez la commande :</li>
+  </ol>
+  <pre>g++ -std=c++17 project_nexus_launcher.cpp -o project_nexus_launcher.exe</pre>
+  <ol start="4">
+    <li>Pour le Project Nexus Server Starter, utilisez la commande :</li>
+  </ol>
+  <pre>g++ -std=c++17 project_nexus_server_starter.cpp -o project_nexus_server_starter.exe -lwininet</pre>
+
+  <h2>Téléchargement des fichiers</h2>
+  <p>Les fichiers seront téléchargés automatiquement lors de l'exécution des launchers. Aucune action supplémentaire n'est nécessaire.</p>
+
+  <a href="#" class="btn" onclick="alert('Le téléchargement se fera automatiquement lors de l\'exécution des launchers.')">Télécharger les launchers</a>
+
+  <footer style="margin-top: 40px; text-align: center; font-size: 0.8em;">
+    <p>&copy; 2023 Project Nexus. Tous droits réservés.</p>
+    <p>Ce projet n'est pas affilié à Epic Games ou Fortnite.</p>
+  </footer>
+</div>
+</body>
+</html>
